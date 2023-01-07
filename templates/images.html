@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Images</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap" rel="stylesheet"> 
+    <style>
+        #container {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .centre {
+            text-align: center;
+        }
+        .image_elem {
+            flex: 1 1 33%;
+            max-width: 33%;
+        }
+        * {
+            font-family: 'Open Sans', sans-serif;
+        }
+        re_25 {
+            width: 15%;
+            height: 15%;
+        }
+        re_50 {
+            width: 50%;
+            height: 50%;
+        }
+        re_5 {
+            width: 5%;
+            height: 5%;
+        }
+        img {
+            border: 1px solid black;
+        }
+    </style>
+    <script>
+        function checkDone() {
+            let interval = setInterval(()=>{
+                fetch('http://localhost:5000/status').then(res=>res.json().then(data=>{
+                    if (data.status) {
+                        window.location.href = 'http://localhost:5000/complete'
+                        clearInterval(interval)
+                    }
+                }))
+            }, 1500)
+        }
+        function sendRequest() {
+            fetch('http://localhost:5000/select', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    number: document.querySelector('input').value
+                })
+            }).then(res=>{
+                res.json().then(data=>{
+                    if (data.m || res.status == 500) {
+                        alert(`You have finished the queue. You can close this tab now.`)
+                        checkDone()
+                    }
+                    else {
+                        setTimeout(()=>{
+                            window.location.href = 'http://localhost:5000/'
+                        }, 1500)
+                    }
+                })
+            })
+        }
+        function checkAlt(e) {
+            let path = e.getAttribute('path')
+            if (path.endsWith('.json')) e.alt = 'This is a model, unable to preview, you should choose the same option as you did for the item.'
+            else if (path.includes('armour-model')) {
+                e.classList.add('re_50')
+            } else if (path.includes('gui')) {
+                e.classList.add('re_15')
+            }
+
+            let box = e.getBoundingClientRect()
+            let w = box.width
+            let h = box.height
+
+            if (w > 1024 || h > 1024) e.classList.add('re_5')
+            else if (w > 512 || h > 512) e.classList.add('re_25')
+
+
+        }
+    </script>
+</head>
+<body>
+    <h1 class="centre">Here are the previews for <b>{{dict['type']}}</b></h1>
+    <h2 class="centre">Enter the number below the images of the pack you want to use.</h2>
+    <div id="container">
+        {%for item in dict['queue']%}
+            <div class="image_elem">
+                <p>{{ item[1] }} - {{item[2]}}</p>
+                <img id="img_{{item[1]}}" src="http://localhost:5000/image/{{item[0]}}" alt="[THIS PACK DOES NOT HAVE A TEXTURE FOR THIS ITEM. DO NOT PICK THIS.]" onload="checkAlt(this)" path="{{item[0]}}" class="{{dict['type']}}">
+            </div>
+        {%endfor%}
+    </div>
+    <br>
+    <input type="text" name="number" placeholder="Enter number here" onkeydown="if (event.keyCode == 13) sendRequest()">
+</body>
+</html>
